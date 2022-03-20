@@ -41,6 +41,10 @@ impl SignatureType {
 	}
 }
 
+impl Default for SignatureType {
+	fn default() -> Self { Self::EdDsaSha512Ed25519 }
+}
+
 pub enum SessionStyle {
 	Datagram,
 	Raw,
@@ -140,8 +144,14 @@ impl SamConnection {
 		Ok(ret["VALUE"].clone())
 	}
 
-	pub fn generate_destination(&mut self) -> Result<(String, String), Error> {
-		let dest_gen_msg = format!("DEST GENERATE \n");
+	pub fn generate_destination(
+		&mut self,
+		signature_type: SignatureType,
+	) -> Result<(String, String), Error> {
+		let dest_gen_msg = format!(
+			"DEST GENERATE SIGNATURE_TYPE={signature_type} \n",
+			signature_type = signature_type.string(),
+		);
 		let ret = self.send(dest_gen_msg, sam_dest_reply)?;
 		Ok((ret["PUB"].clone(), ret["PRIV"].clone()))
 	}
