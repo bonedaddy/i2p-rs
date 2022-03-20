@@ -1,0 +1,17 @@
+[package]
+name = "proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+i2p = {path = "../../", version = "0.1.0"}
+env_logger = "0.5"
+log = "0.4.6"
+anyhow = "1"
+tokio = {version = "1.17.0", features = ["full", "rt-multi-thread"]}
+clap = "2.33.3"
+
+
+[[bin]]
+name = "proxy"
+path = "src/main.rs"
