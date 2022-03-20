@@ -14,11 +14,32 @@ use rand::{self, Rng};
 use crate::error::{Error, ErrorKind};
 use crate::net::{I2pAddr, I2pSocketAddr};
 use crate::parsers::{sam_hello, sam_naming_reply, sam_session_status, sam_stream_status, sam_dest_reply};
+use crate::sam_options::SAMOptions;
 
 pub static DEFAULT_API: &'static str = "127.0.0.1:7656";
 
 static SAM_MIN: &'static str = "3.0";
 static SAM_MAX: &'static str = "3.1";
+
+pub enum SignatureType {
+	DsaSha1,
+	EcdsaSha256P256,
+	EcdsaSha384P384,
+	EcdsaSha512P21,
+	EdDsaSha512Ed25519,
+}
+
+impl SignatureType {
+	fn string(&self) -> &str {
+		match self {
+			Self::DsaSha1 => "DSA_SHA1",
+			Self::EcdsaSha256P256 => "ECDSA_SHA256_P256",
+			Self::EcdsaSha384P384 => "ECDSA_SHA384_P384",
+			Self::EcdsaSha512P21 => "ECDSA_SHA512_P521",
+			Self::EdDsaSha512Ed25519 => "EdDSA_SHA512_Ed25519",
+		}
+	}
+}
 
 pub enum SessionStyle {
 	Datagram,
@@ -141,16 +162,20 @@ impl Session {
 		destination: &str,
 		nickname: &str,
 		style: SessionStyle,
+		signature_type: SignatureType,
+		options: SAMOptions,
 	) -> Result<Session, Error> {
 		let mut sam = SamConnection::connect(sam_addr)?;
 		let create_session_msg = format!(
 			// values for SIGNATURE_TYPE and leaseSetEncType taken from
 			// https://github.com/eyedeekay/goSam/blob/62cade9ebc26e48ff32a517ef94212fc90aa92cd/client.go#L169
 			// https://github.com/eyedeekay/goSam/blob/62cade9ebc26e48ff32a517ef94212fc90aa92cd/client.go#L166
-			"SESSION CREATE STYLE={style} ID={nickname} DESTINATION={destination} SIGNATURE_TYPE=EdDSA_SHA512_Ed25519 i2cp.leaseSetEncType=4,0\n",
+			"SESSION CREATE STYLE={style} ID={nickname} DESTINATION={destination} SIGNATURE_TYPE={signature_type} {options}\n",
 			style = style.string(),
 			nickname = nickname,
-			destination = destination
+			destination = destination,
+			signature_type = signature_type.string(),
+			options = options.string()
 		);
 
 		sam.send(create_session_msg, sam_session_status)?;
@@ -167,13 +192,13 @@ impl Session {
 	/// Create a new session identified by the provided destination. Auto-generates
 	/// a nickname uniquely associated with the new session.
 	pub fn from_destination<A: ToSocketAddrs>(sam_addr: A, destination: &str) -> Result<Session, Error> {
-		Self::create(sam_addr, destination, &nickname(), SessionStyle::Stream)
+		Self::create(sam_addr, destination, &nickname(), SessionStyle::Stream, SignatureType::EdDsaSha512Ed25519, SAMOptions::default())
 	}
 
 	/// Convenience constructor to create a new transient session with an
 	/// auto-generated nickname.
 	pub fn transient<A: ToSocketAddrs>(sam_addr: A) -> Result<Session, Error> {
-		Self::create(sam_addr, "TRANSIENT", &nickname(), SessionStyle::Stream)
+		Self::create(sam_addr, "TRANSIENT", &nickname(), SessionStyle::Stream, SignatureType::EdDsaSha512Ed25519, SAMOptions::default())
 	}
 
 	pub fn sam_api(&self) -> Result<SocketAddr, Error> {
