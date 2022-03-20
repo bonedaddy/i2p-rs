@@ -2,12 +2,20 @@
 
 //! options used when interacting with the SAM bridge
 pub struct SAMOptions<'a> {
+    pub from_port: Option<u16>,
+    pub to_port: Option<u16>,
     pub i2cp: Option<I2CP<'a>>
 }
 
 impl<'a> SAMOptions<'a> {
     pub fn string(&self) -> String { 
         let mut options = String::default();
+        if let Some(from_port) = self.from_port {
+            options.push_str(&format!("FROM_PORT={} ", from_port));
+        }
+        if let Some(to_port) = self.to_port {
+            options.push_str(&format!("TO_PORT={} ", to_port));
+        }
         if let Some(i2cp_options) = &self.i2cp {
             options.push_str(&format!("{}", i2cp_options.string()));
         }
@@ -124,6 +132,8 @@ impl I2CPMessageReliability {
 impl Default for SAMOptions<'_> {
     fn default() -> SAMOptions<'static> {
         SAMOptions { 
+            from_port: None,
+            to_port: None,
             i2cp: Some(I2CP {
                 encrypt_lease_set: None,
                 fast_receive: None,

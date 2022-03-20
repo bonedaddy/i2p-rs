@@ -18,8 +18,8 @@ use crate::sam_options::SAMOptions;
 
 pub static DEFAULT_API: &'static str = "127.0.0.1:7656";
 
-static SAM_MIN: &'static str = "3.0";
-static SAM_MAX: &'static str = "3.1";
+static SAM_MIN: &'static str = "3.1";
+static SAM_MAX: &'static str = "3.2";
 
 pub enum SignatureType {
 	DsaSha1,
