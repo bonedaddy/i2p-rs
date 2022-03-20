@@ -262,25 +262,36 @@ impl I2pListener {
 	/// ```no_run
 	/// use i2p::net::I2pListener;
 	///
-	/// let listener = I2pListener::bind().unwrap();
+	/// let listener = I2pListener::bind_transient().unwrap();
 	/// ```
-	pub fn bind() -> Result<I2pListener, Error> {
-		I2pListener::bind_via(DEFAULT_API)
+	pub fn bind_transient() -> Result<I2pListener, Error> {
+		I2pListener::bind_via_transient(DEFAULT_API)
 	}
-
+	pub fn bind_persistent(destination: &str) -> Result<I2pListener, Error> {
+		I2pListener::bind_via_persistent(DEFAULT_API, destination)
+	}
 	pub fn bind_with_session(session: &Session) -> Result<I2pListener, Error> {
 		let forward = StreamForward::with_session(session)?;
 		Ok(I2pListener{forward})
 	}
 
-	pub fn bind_via<A: ToSocketAddrs>(sam_addr: A) -> Result<I2pListener, Error> {
-		super::each_addr(sam_addr, I2pListener::bind_addr).map_err(|e| e.into())
+	pub fn bind_via_transient<A: ToSocketAddrs>(sam_addr: A) -> Result<I2pListener, Error> {
+		super::each_addr(sam_addr, I2pListener::bind_addr_transient).map_err(|e| e.into())
+	}
+	pub fn bind_via_persistent<A: ToSocketAddrs>(sam_addr: A, destination: &str) -> Result<I2pListener, Error> {
+		super::each_addr_persistent(sam_addr, destination, I2pListener::bind_addr_persistent).map_err(|e| e.into())
 	}
 
-	fn bind_addr(sam_addr: &SocketAddr) -> Result<I2pListener, Error> {
-		let forward = StreamForward::new(sam_addr)?;
+	fn bind_addr_transient(sam_addr: &SocketAddr) -> Result<I2pListener, Error> {
+		let forward = StreamForward::new_transient(sam_addr)?;
 		Ok(I2pListener{forward})
 	}
+
+	fn bind_addr_persistent(sam_addr: &SocketAddr, destination: &str) -> Result<I2pListener, Error> {
+		let forward = StreamForward::new_persistent(sam_addr, destination)?;
+		Ok(I2pListener{forward})
+	}
+
 
 	/// Returns the local socket address of this listener.
 	///

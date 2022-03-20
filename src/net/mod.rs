@@ -49,3 +49,22 @@ where
 	}
 	Err(last_err.unwrap_or(ErrorKind::UnresolvableAddress.into()))
 }
+
+fn each_addr_persistent<A: ToSocketAddrs, F, T>(
+	sam_addr: A,
+	destination: &str,
+	mut f: F,
+) -> Result<T, Error>
+where
+	F: FnMut(&SocketAddr, &str) -> Result<T, Error>,
+{
+	let mut last_err = None;
+	for sam_addr in sam_addr.to_socket_addrs()? {
+		match f(&sam_addr, destination) {
+			Ok(l) => return Ok(l),
+			Err(e) => last_err = Some(e),
+		}
+	}
+	Err(last_err.unwrap_or(ErrorKind::UnresolvableAddress.into()))
+}
+

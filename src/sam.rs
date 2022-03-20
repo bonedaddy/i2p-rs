@@ -210,7 +210,9 @@ impl Session {
 	pub fn transient<A: ToSocketAddrs>(sam_addr: A) -> Result<Session, Error> {
 		Self::create(sam_addr, "TRANSIENT", &nickname(), SessionStyle::Stream, SignatureType::EdDsaSha512Ed25519, SAMOptions::default())
 	}
-
+	pub fn persistent<A: ToSocketAddrs>(sam_addr: A, destination: &str) -> Result<Session, Error> {
+		Self::create(sam_addr, destination, &nickname(), SessionStyle::Stream, SignatureType::EdDsaSha512Ed25519, SAMOptions::default())
+	}
 	pub fn sam_api(&self) -> Result<SocketAddr, Error> {
 		self.sam.conn.peer_addr().map_err(|e| e.into())
 	}
@@ -316,10 +318,16 @@ pub struct StreamForward {
 }
 
 impl StreamForward {
-	pub fn new<A: ToSocketAddrs>(
+	pub fn new_transient<A: ToSocketAddrs>(
 		sam_addr: A,
 	) -> Result<StreamForward, Error> {
 		Ok(StreamForward {session: Session::transient(sam_addr)?})
+	}
+	pub fn new_persistent<A: ToSocketAddrs>(
+		sam_addr: A,
+		destination: &str,
+	) -> Result<StreamForward, Error> {
+		Ok(StreamForward {session: Session::persistent(sam_addr, destination)?})
 	}
 
 	/// Create a new SAM client connection to the provided destination and port
