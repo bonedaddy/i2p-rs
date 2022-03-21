@@ -2,6 +2,7 @@ use std::io::prelude::*;
 
 use std::fmt;
 use std::io;
+use std::net::TcpStream;
 use std::net::{Shutdown, SocketAddr, ToSocketAddrs};
 
 use crate::error::{Error, ErrorKind};
@@ -185,6 +186,10 @@ impl I2pStream {
 	/// ```
 	pub fn try_clone(&self) -> Result<I2pStream, Error> {
 		self.inner.duplicate().map(|s| I2pStream { inner: s })
+	}
+	pub fn to_tokio_stream(&mut self) -> Result<tokio::net::TcpStream, Error> {
+		self.set_nonblocking(true)?;
+		self.inner.to_tokio_stream()
 	}
 }
 

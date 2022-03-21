@@ -296,6 +296,9 @@ impl StreamConnect {
 			local_port: self.local_port,
 		})
 	}
+	pub fn to_tokio_stream(&self) -> Result<tokio::net::TcpStream, Error> {
+		Ok(tokio::net::TcpStream::from_std(self.sam.duplicate()?.conn)?)
+	}
 }
 
 impl Read for StreamConnect {
