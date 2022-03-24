@@ -55,6 +55,47 @@ pub struct I2CP<'a> {
     pub reduce_on_idle: Option<bool>,
     /// Tunnel quantity when reduced (applies to both inbound and outbound)
     pub reduce_quantity: Option<u8>,
+    pub inbound: Option<I2CPInbound<'a>>,
+    pub output: Option<I2CPOutbound<'a>>,
+}
+
+
+#[derive(Default)]
+pub struct I2CPInbound<'a> {
+    /// 	If incoming zero hop tunnel is allowed
+    pub allow_zero_hop: Option<bool>,
+    /// 	Number of redundant fail-over for tunnels in
+    pub backup_quantity: Option<u8>,
+    /// 	Number of IP bytes to match to determine if two routers should not be in the same tunnel. 0 to disable.
+    pub ip_restriction: Option<u8>,
+    /// Length of tunnels in
+    pub length: Option<u8>,
+    /// Random amount to add or subtract to the length of tunnels in. A positive number x means add a random amount from 0 to x inclusive. A negative number -x means add a random amount from -x to x inclusive. The router will limit the total length of the tunnel to 0 to 7 inclusive. The default variance was 1 prior to release 0.7.6.
+    pub length_variance: Option<i8>,
+    ///  	Number of tunnels in. Limit was increased from 6 to 16 in release 0.9; however, numbers higher than 6 are incompatible with older releases.
+    pub quantity: Option<u8>,
+    ///  	Used for consistent peer ordering across restarts.
+    pub random_key: Option<&'a str>,
+}
+
+#[derive(Default)]
+pub struct I2CPOutbound<'a> {
+    /// 	If outgoing zero hop tunnel is allowed
+    pub allow_zero_hop: Option<bool>,
+    /// 	Number of redundant fail-over for tunnels out
+    pub backup_quantity: Option<u8>,
+    /// 	Number of IP bytes to match to determine if two routers should not be in the same tunnel. 0 to disable.
+    pub ip_restriction: Option<u8>,
+    /// Length of tunnels out
+    pub length: Option<u8>,
+    /// Random amount to add or subtract to the length of tunnels in. A positive number x means add a random amount from 0 to x inclusive. A negative number -x means add a random amount from -x to x inclusive. The router will limit the total length of the tunnel to 0 to 7 inclusive. The default variance was 1 prior to release 0.7.6.
+    pub length_variance: Option<i8>,
+    /// 	Priority adjustment for outbound messages. Higher is higher priority.
+    pub priority: Option<i8>,
+    ///  	Number of tunnels in. Limit was increased from 6 to 16 in release 0.9; however, numbers higher than 6 are incompatible with older releases.
+    pub quantity: Option<u8>,
+    ///  	Used for consistent peer ordering across restarts.
+    pub random_key: Option<&'a str>,
 }
 
 impl<'a> I2CP<'a> {
@@ -105,6 +146,9 @@ impl<'a> I2CP<'a> {
         if let Some(reduce_quantity) = self.reduce_quantity {
             options.push_str(&format!("i2cp.reduceQuantity={} ", reduce_quantity));
         }
+        if let Some(inbound) = self.inbound {
+            
+        }
         options
     }
 }
@@ -134,23 +178,31 @@ impl Default for SAMOptions<'_> {
         SAMOptions { 
             from_port: None,
             to_port: None,
-            i2cp: Some(I2CP {
-                encrypt_lease_set: None,
-                fast_receive: None,
-                gzip: None,
-                lease_set_auth_type: None,
-                lease_set_blinded_type: None,
-                lease_set_enc_type: Some("4,0"),
-                lease_set_key: None,
-                lease_set_private_key: None,
-                lease_set_secret: None,
-                lease_set_signing_private_key: None,
-                lease_set_type: None,
-                message_reliability: None,
-                reduce_idle_time: None,
-                reduce_on_idle: None,
-                reduce_quantity: None,
-            })
+            i2cp: Some(I2CP::default())
+        }
+    }
+}
+
+impl Default for I2CP<'_> {
+    fn default() -> I2CP<'static> {
+        I2CP {
+            encrypt_lease_set: None,
+            fast_receive: None,
+            gzip: None,
+            lease_set_auth_type: None,
+            lease_set_blinded_type: None,
+            lease_set_enc_type: Some("4,0"),
+            lease_set_key: None,
+            lease_set_private_key: None,
+            lease_set_secret: None,
+            lease_set_signing_private_key: None,
+            lease_set_type: None,
+            message_reliability: None,
+            reduce_idle_time: None,
+            reduce_on_idle: None,
+            reduce_quantity: None,
+            inbound: None,
+            output: None,
         }
     }
 }
