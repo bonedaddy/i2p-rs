@@ -154,6 +154,73 @@ impl<'a> I2CP<'a> {
 }
 
 
+
+pub struct I2CPRouterOptions<'a> {
+    /// The timeout (ms) for all sent messages. Unused. See the protocol specification for per-message settings.
+    pub client_message_timeout: Option<u32>,
+    /// Should generally be set to true for clients and false for servers
+    pub dont_publish_lease_set: Option<bool>,
+    /// If true, the router just sends the MessagePayload instead of sending a MessageStatus and awaiting a ReceiveMessageBegin.
+    pub fast_receive: Option<bool>,
+    /// The type of authentication for encrypted LS2. 0 for no per-client authentication (the default); 1 for DH per-client authentication; 2 for PSK per-client authentication. See proposal 123. 
+    pub lease_set_auth_type: Option<LeaseSetAuthType>,
+    /// 	The encryption type to be used, as of 0.9.38. Interpreted client-side, but also passed to the router in the SessionConfig, to declare intent and check support. As of 0.9.39, may be comma-separated values for multiple types. See PublicKey in common strutures spec for values. See proposals 123, 144, and 145. 
+    pub lease_set_enc_type: Option<LeaseSetEncType<'a>>,
+    /// The expiration of the offline signature, 4 bytes, seconds since the epoch. See proposal 123. 
+    pub lease_set_offline_expiration: Option<LeaseSetOfflineExpiration>,
+    /// The base 64 of the offline signature. See proposal 123. 
+    pub lease_set_offline_signature: Option<LeaseSetOfflineSignature<'a>>,
+    /// A base 64 X25519 private key for the router to use to decrypt the encrypted LS2 locally, only if per-client authentication is enabled. Optionally preceded by the key type and ':'. Only "ECIES_X25519:" is supported, which is the default. See proposal 123. Do not confuse with i2cp.leaseSetPrivateKey which is for the leaseset encryption keys. 
+    pub lease_set_priv_key: Option<LeaseSetPrivKey<'a>>,
+    /// 	Base 64 encoded UTF-8 secret used to blind the leaseset address. See proposal 123. 
+    pub lease_set_secret: Option<LeaseSetSecret<'a>>,
+    ///  The base 64 of the transient private key, prefixed by an optional sig type number or name, default DSA_SHA1. See proposal 123. 
+    pub lease_set_transient_public_key: Option<LeaseSetTransientPublicKey<'a>>,
+
+}
+
+pub struct I2CPRouterCryptoOptions {
+    /// Minimum number of ElGamal/AES Session Tags before we send more. Recommended: approximately tagsToSend * 2/3
+    pub low_tag_threshold: Option<u8>,
+    /// Inbound tag window for ECIES-X25519-AEAD-Ratchet. Local inbound tagset size. See proposal 144. 
+    pub ratchet_inbound_tags: Option<u64>,
+    /// Outbound tag window for ECIES-X25519-AEAD-Ratchet. Advisory to send to the far-end in the options block. See proposal 144. 
+    pub ratchet_outbound_tags: Option<u64>,
+    /// Number of ElGamal/AES Session Tags to send at a time. For clients with relatively low bandwidth per-client-pair (IRC, some UDP apps), this may be set lower.
+    pub tags_to_send: Option<u8>,
+}
+
+/// The base 64 of the offline signature. See proposal 123. 
+pub type LeaseSetOfflineSignature<'a> = &'a str;
+
+/// The encryption type to be used, as of 0.9.38. Interpreted client-side, but also passed to the router in the SessionConfig, to declare intent and check support. As of 0.9.39, may be comma-separated values for multiple types. See PublicKey in common strutures spec for values. See proposals 123, 144, and 145. 
+pub type LeaseSetEncType<'a> = &'a str;
+
+/// A base 64 X25519 private key for the router to use to decrypt the encrypted LS2 locally, only if per-client authentication is enabled. Optionally preceded by the key type and ':'. Only "ECIES_X25519:" is supported, which is the default. See proposal 123. Do not confuse with i2cp.leaseSetPrivateKey which is for the leaseset encryption keys. 
+pub type LeaseSetPrivKey<'a> = &'a str;
+
+/// Base 64 encoded UTF-8 secret used to blind the leaseset address. See proposal 123. 
+pub type LeaseSetSecret<'a> = &'a str;
+
+///  The base 64 of the transient private key, prefixed by an optional sig type number or name, default DSA_SHA1. See proposal 123. 
+pub type LeaseSetTransientPublicKey<'a> = &'a str;
+
+/// The expiration of the offline signature, 4 bytes, seconds since the epoch. See proposal 123. 
+pub type LeaseSetOfflineExpiration = [u8; 4];
+
+/// The type of authentication for encrypted LS2. 0 for no per-client authentication (the default); 1 for DH per-client authentication; 2 for PSK per-client authentication. See proposal 123. 
+#[derive(Debug)]
+#[repr(u64)]
+pub enum LeaseSetAuthType {
+    NoPerClient = 0_u64,
+    DHPerClient = 1_u64,
+    PSKPerClient = 2_u64,
+}
+
+impl Default for LeaseSetAuthType {
+    fn default() -> Self { Self::NoPerClient }
+}
+
 pub enum I2CPMessageReliability {
     BestEffort,
     None,
