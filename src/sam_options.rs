@@ -42,24 +42,13 @@ impl I2CPOptions {
 
 
 impl I2CPRouterOptions {
-    pub fn string(&self) -> String {
+    pub fn string(&self) -> Option<String> {
         let mut options = String::default();
         if let Some(client_message_timeout) = self.client_message_timeout {
             options.push_str(&format!("clientMessageTimeout={}", client_message_timeout));
         }
         if let Some(crypto_options) = self.crypto_options {
-            if let Some(low_tag_threshold) = crypto_options.low_tag_threshold {
-                options.push_str(&format!("crypto.lowTagThreshold={}", low_tag_threshold));
-            }
-            if let Some(inbound_tags) = crypto_options.ratchet_inbound_tags {
-                options.push_str(&format!("crypto.ratchet.inboundTags={}", inbound_tags));
-            }
-            if let Some(outbound_tags) = crypto_options.ratchet_outbound_tags {
-                options.push_str(&format!("crypto.ratchet.outboundTags={}", outbound_tags));
-            }
-            if let Some(tags_to_send) = crypto_options.tags_to_send {
-                options.push_str(&format!("crypto.tagsToSend={}", tags_to_send));
-            }
+            if let Some(crypto_options) = crypto_options.string() { options.push_str(&crypto_options); }
         }
         if let Some(dont_publish_lease_set) = self.dont_publish_lease_set {
             options.push_str(&format!("i2cp.dontPublishLeaseSet={}", dont_publish_lease_set));
@@ -80,9 +69,37 @@ impl I2CPRouterOptions {
             options.push_str(&format!("i2cp.leaseSetPrivKey={}", lease_set_priv_key.to_string()))
         }
         if let Some(lease_set_secret) = self.lease_set_secret {
-            options.push_str(&format!("i2cp.leaseSetSecret={}", lease_set_secret.to_string()))
+            options.push_str(&format!("i2cp.leaseSetSecret={}", lease_set_secret.to_string()));
         }
-        options
+        if let Some(lease_set_transient_public_key) = self.lease_set_transient_public_key {
+            options.push_str(&format!("i2cp.leaseSetTransientPublicKey={}", lease_set_transient_public_key.to_string()));
+        }
+        if let Some(lease_set_type) = self.lease_set_type {
+            options.push_str(&format!("i2cp.leaseSetType={}", lease_set_type.to_string()));
+        }
+        if let Some(message_reliability) = self.message_reliability {
+            options.push_str(&format!("i2cp.messageReliability={}", message_reliability.to_string()));
+        }
+        if let Some(password) = self.password {
+            options.push_str(&format!("i2cp.password={}", password));
+        }
+        if let Some(username) = self.username {
+            options.push_str(&format!("i2cp.username={}", username));
+        }
+        if let Some(inbound) = self.inbound {
+            if let Some(inbound) = inbound.string() {
+                options.push_str(&inbound);
+            }
+        }
+        if let Some(outbound) = self.outbound {
+            if let Some(outbound) = outbound.string() {
+                options.push_str(&outbound);
+            }
+        }
+        if let Some(should_bundle_reply_info) = self.should_bundle_reply_info {
+            options.push_str(&format!("shouldBundleReplyInfo={}", should_bundle_reply_info));
+        }
+        if options != "" { Some(options) } else { None }
     }
 }
 
@@ -117,7 +134,7 @@ pub struct I2CPRouterOptions {
     pub password: Option<String>,
     /// inbound tunnel optoins
     pub inbound: Option<I2CPTunnelInboundOptions>,
-    pub output: Option<I2CPTunnelOutboundOptions>,
+    pub outbound: Option<I2CPTunnelOutboundOptions>,
     ///Set to false to disable ever bundling a reply LeaseSet. For clients that do not publish their LeaseSet, this option must be true for any reply to be possible. "true" is also recommended for multihomed servers with long connection times.
     ///
     ///Setting to "false" may save significant outbound bandwidth, especially if the client is configured with a large number of inbound tunnels (Leases). If replies are still required, this may shift the bandwidth burden to the far-end client and the floodfill. There are several cases where "false" may be appropriate:
@@ -141,6 +158,25 @@ pub struct I2CPRouterCryptoOptions {
 }
 
 
+impl I2CPRouterCryptoOptions {
+    pub fn string(&self) -> Option<String> {
+        let mut options = String::default();
+            if let Some(low_tag_threshold) = self.low_tag_threshold {
+                options.push_str(&format!("crypto.lowTagThreshold={}", low_tag_threshold));
+            }
+            if let Some(inbound_tags) = self.ratchet_inbound_tags {
+                options.push_str(&format!("crypto.ratchet.inboundTags={}", inbound_tags));
+            }
+            if let Some(outbound_tags) = self.ratchet_outbound_tags {
+                options.push_str(&format!("crypto.ratchet.outboundTags={}", outbound_tags));
+            }
+            if let Some(tags_to_send) = self.tags_to_send {
+                options.push_str(&format!("crypto.tagsToSend={}", tags_to_send));
+            }
+        if options != "" {Some(options)} else {None}
+    }
+}
+
 #[derive(Default)]
 pub struct I2CPTunnelInboundOptions {
     /// 	If incoming zero hop tunnel is allowed
@@ -158,6 +194,15 @@ pub struct I2CPTunnelInboundOptions {
     ///  	Used for consistent peer ordering across restarts.
     pub random_key: Option<String>,
 }
+
+impl I2CPTunnelInboundOptions {
+    pub fn string(&self) -> Option<String> { None }
+}
+
+impl I2CPTunnelOutboundOptions {
+    pub fn string(&self) -> Option<String> { None }
+}
+
 
 #[derive(Default)]
 pub struct I2CPTunnelOutboundOptions {
@@ -259,7 +304,7 @@ pub type LeaseSetOfflineExpiration = [u8; 4];
 pub struct LeaseSetType(u8);
 
 /// The sig type of the blinded key for encrypted LS2. Default depends on the destination sig type. See proposal 123. 
-pub type LeaseSetBlindedType = u16;
+pub struct LeaseSetBlindedType(u16);
 
 /// The type of authentication for encrypted LS2. 0 for no per-client authentication (the default); 1 for DH per-client authentication; 2 for PSK per-client authentication. See proposal 123. 
 #[derive(Debug)]
@@ -268,6 +313,14 @@ pub enum LeaseSetAuthType {
     NoPerClient = 0_u64,
     DHPerClient = 1_u64,
     PSKPerClient = 2_u64,
+}
+
+impl ToString for LeaseSetType {
+    fn to_string(&self) -> String { format!("{}", self.0) }
+}
+
+impl ToString for LeaseSetBlindedType {
+    fn to_string(&self) -> String { format!("{}", self.0) }
 }
 
 impl ToString for LeaseSetAuthType {
@@ -364,8 +417,10 @@ impl Default for MessageReliability {
     fn default() -> Self { Self::None }
 }
 
-impl MessageReliability {
-    pub fn string(&self) -> String {
+
+
+impl ToString for MessageReliability {
+    fn to_string(&self) -> String {
         match self {
             Self::BestEffort => String::from("BestEffort"),
             Self::None => String::from("None"),
