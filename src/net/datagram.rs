@@ -15,8 +15,8 @@ use std::net::{SocketAddr, ToSocketAddrs};
 ///
 /// ```no_run
 /// use i2p::net::I2pDatagramSocket;
-/// use i2p::Error;
-///
+/// use i2p::error::I2PError;
+/// use anyhow::Result;
 /// # fn foo() -> Result<()> {
 /// {
 ///     let mut socket = I2pDatagramSocket::bind("127.0.0.1:34254")?;

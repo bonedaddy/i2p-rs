@@ -1,6 +1,7 @@
 use nom::{
-	alt, do_parse, named, separated_list, tag, take_till,
+	alt,
 	character::complete::{alphanumeric1 as alphanumeric, space1 as space},
+	do_parse, named, separated_list, tag, take_till,
 };
 fn is_space(chr: char) -> bool {
 	chr == ' ' || chr == '\t'
@@ -160,12 +161,12 @@ mod tests {
 		assert_eq!(
 			sam_naming_reply("NAMING REPLY RESULT=KEY_NOT_FOUND\n"),
 			Ok(("", vec![("RESULT", "KEY_NOT_FOUND")]))
-		);	
+		);
 		if let Err(err) = sam_naming_reply("NAMINGREPLY RESULT=KEY_NOT_FOUND\n") {
 			match err {
 				nom::Err::Error((_, e)) => {
 					assert_eq!(e, ErrorKind::Tag);
-				}	
+				}
 				nom::Err::Failure((_, e)) => {
 					assert_eq!(e, ErrorKind::Tag);
 				}
@@ -180,7 +181,7 @@ mod tests {
 			match err {
 				nom::Err::Error((_, e)) => {
 					assert_eq!(e, ErrorKind::Tag);
-				}	
+				}
 				nom::Err::Failure((_, e)) => {
 					assert_eq!(e, ErrorKind::Tag);
 				}
