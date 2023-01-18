@@ -128,10 +128,10 @@ impl fmt::Display for I2pSocketAddr {
 ///
 /// Some examples:
 ///
-/// ```no_run
+/// ```
 /// use i2p::net::{I2pSocketAddr, I2pStream, I2pDatagramSocket, I2pListener, I2pAddr};
 ///
-/// fn main() {
+///
 ///     let dest = I2pAddr::new("example.i2p");
 ///     let port = 12345;
 ///
@@ -147,7 +147,6 @@ impl fmt::Display for I2pSocketAddr {
 ///
 ///     let mut i2p_dg_s = I2pDatagramSocket::bind(("127.0.0.1", port)).unwrap();
 ///     i2p_dg_s.send_to(&[7], (dest, 23451)).unwrap();
-/// }
 /// ```
 pub trait ToI2pSocketAddrs {
 	/// Returned iterator over socket addresses which this type may correspond
