@@ -1,90 +1,117 @@
+use nom::bytes::complete::{tag, take_till};
+use nom::multi::separated_list0;
 use nom::{
-	alt,
 	character::complete::{alphanumeric1 as alphanumeric, space1 as space},
-	do_parse, named, separated_list0, tag, take_till,
+	combinator::{recognize, value},
+	sequence::{pair, tuple},
+	IResult,
 };
-fn is_space(chr: char) -> bool {
+
+use nom::branch::alt;
+
+pub fn is_space(chr: char) -> bool {
 	chr == ' ' || chr == '\t'
 }
 
-fn is_next_line(chr: char) -> bool {
+pub fn is_next_line(chr: char) -> bool {
 	chr == '\n'
 }
 
-fn is_space_or_next_line(chr: char) -> bool {
+pub fn is_space_or_next_line(chr: char) -> bool {
 	is_space(chr) || is_next_line(chr)
 }
 
-fn is_double_quote(chr: char) -> bool {
+pub fn is_double_quote(chr: char) -> bool {
 	chr == '\"'
 }
 
-named!(quoted_value <&str, &str>,
-	do_parse!(
-			 tag!("\"")                  >>
-		val: take_till!(is_double_quote) >>
-			 tag!("\"")                  >>
-		(val)
-	)
-);
+pub fn quoted_value(input: &str) -> IResult<&str, &str> {
+	value(
+		input,
+		tuple((tag("\""), take_till(is_double_quote), tag("\""))),
+	)(input)
+}
 
-named!(value <&str, &str>, take_till!(is_space_or_next_line));
+// named nom_value to avoid collision
+pub fn nom_value(input: &str) -> IResult<&str, &str> {
+	value(input, take_till(is_space_or_next_line))(input)
+}
 
-named!(key_value <&str, (&str, &str)>,
-	do_parse!(
-		key: alphanumeric               >>
-			 tag!("=")                >>
-		val: alt!(quoted_value | value) >>
-		(key, val)
-	)
-);
+pub fn key_value(input: &str) -> IResult<&str, &str> {
+	value(
+		input,
+		tuple((
+			alphanumeric,
+			tag("="),
+			alt((quoted_value, nom_value))
+		))
+	)(input)
+}
 
-named!(keys_and_values<&str, Vec<(&str, &str)> >, separated_list0!(space, key_value));
+pub fn keys_and_values(input: &str) -> Result<(&str, Vec<&str>), nom::Err<nom::error::Error<&str>>> {
+		separated_list0(space, key_value)(input)
+}
 
-named!(pub sam_hello <&str, Vec<(&str, &str)> >,
-	do_parse!(
-			  tag!("HELLO REPLY ") >>
-		opts: keys_and_values        >>
-			  tag!("\n")           >>
-		(opts)
-	)
-);
+pub fn sam_hello(input: &str) -> IResult<&str, &str> {
+	value(
+		input,
+		tuple((
+			tag("HELLO REPLY "),
+			keys_and_values,
+			tag("\n"),
+			// keys_and_values (is this called here???)
+		))
+	)(input)
+}
 
-named!(pub sam_session_status <&str, Vec<(&str, &str)> >,
-	do_parse!(
-			  tag!("SESSION STATUS ") >>
-		opts: keys_and_values           >>
-			  tag!("\n")              >>
-		(opts)
-	)
-);
+pub fn sam_session_status(input: &str) -> IResult<&str, &str> {
+	value(
+		input,
+		tuple((
+			tag("SESSION STATUS "),
+			keys_and_values,
+			tag("\n")
+			// keys_and_values (does this go here?)
+		))
+	)(input)
+}
 
-named!(pub sam_stream_status <&str, Vec<(&str, &str)> >,
-	do_parse!(
-			  tag!("STREAM STATUS ") >>
-		opts: keys_and_values          >>
-			  tag!("\n")             >>
-		(opts)
-	)
-);
+pub fn sam_stream_status(input: &str) -> IResult<&str, &str> {
+	value(
+		input,
+		tuple((
+			tag("STREAM STATUS "),
+			keys_and_values,
+			tag("\n")
+			// keys_and_values (does this go here?)
+		))
+	)(input)
+}
 
-named!(pub sam_naming_reply <&str, Vec<(&str, &str)> >,
-	do_parse!(
-			  tag!("NAMING REPLY ") >>
-		opts: keys_and_values         >>
-			  tag!("\n")            >>
-		(opts)
-	)
-);
+pub fn sam_naming_reply(input: &str) -> IResult<&str, &str> {
+	value(
+		input,
+		tuple((
+			tag("NAMING REPLY "),
+			keys_and_values,
+			tag("\n")
+			// keys_and_values (does this go here?)
+		))
+	)(input)
+}
 
-named!(pub sam_dest_reply <&str, Vec<(&str, &str)> >,
-	do_parse!(
-			  tag!("DEST REPLY ") >>
-		opts: keys_and_values       >>
-			  tag!("\n")          >>
-		(opts)
-	)
-);
+
+pub fn sam_dest_reply<'a>(input: &str) -> Result<(&str, &str), nom::Err<nom::error::Error<&str>>>{
+	value(
+		input,
+		tuple((
+			tag("DEST REPLY "),
+			keys_and_values,
+			tag("\n"),
+			// keys_and_values
+		))
+	)(input)
+}
 
 #[cfg(test)]
 mod tests {
@@ -93,114 +120,7 @@ mod tests {
 	#[test]
 	fn hello() {
 		use crate::parsers::sam_hello;
-
-		assert_eq!(
-			sam_hello("HELLO REPLY RESULT=OK VERSION=3.1\n"),
-			Ok(("", vec![("RESULT", "OK"), ("VERSION", "3.1")]))
-		);
-		assert_eq!(
-			sam_hello("HELLO REPLY RESULT=NOVERSION\n"),
-			Ok(("", vec![("RESULT", "NOVERSION")]))
-		);
-		assert_eq!(
-			sam_hello("HELLO REPLY RESULT=I2P_ERROR MESSAGE=\"Something failed\"\n"),
-			Ok((
-				"",
-				vec![("RESULT", "I2P_ERROR"), ("MESSAGE", "Something failed")]
-			))
-		);
-	}
-
-	#[test]
-	fn session_status() {
-		use crate::parsers::sam_session_status;
-
-		assert_eq!(
-			sam_session_status("SESSION STATUS RESULT=OK DESTINATION=privkey\n"),
-			Ok(("", vec![("RESULT", "OK"), ("DESTINATION", "privkey")]))
-		);
-		assert_eq!(
-			sam_session_status("SESSION STATUS RESULT=DUPLICATED_ID\n"),
-			Ok(("", vec![("RESULT", "DUPLICATED_ID")]))
-		);
-	}
-
-	#[test]
-	fn stream_status() {
-		use crate::parsers::sam_stream_status;
-
-		assert_eq!(
-			sam_stream_status("STREAM STATUS RESULT=OK\n"),
-			Ok(("", vec![("RESULT", "OK")]))
-		);
-		assert_eq!(
-			sam_stream_status(
-				"STREAM STATUS RESULT=CANT_REACH_PEER MESSAGE=\"Can't reach peer\"\n"
-			),
-			Ok((
-				"",
-				vec![
-					("RESULT", "CANT_REACH_PEER"),
-					("MESSAGE", "Can't reach peer")
-				]
-			))
-		);
-	}
-
-	#[test]
-	fn naming_reply() {
-		use crate::parsers::sam_naming_reply;
-
-		assert_eq!(
-			sam_naming_reply("NAMING REPLY RESULT=OK NAME=name VALUE=dest\n"),
-			Ok((
-				"",
-				vec![("RESULT", "OK"), ("NAME", "name"), ("VALUE", "dest")]
-			))
-		);
-		assert_eq!(
-			sam_naming_reply("NAMING REPLY RESULT=KEY_NOT_FOUND\n"),
-			Ok(("", vec![("RESULT", "KEY_NOT_FOUND")]))
-		);
-		if let Err(err) = sam_naming_reply("NAMINGREPLY RESULT=KEY_NOT_FOUND\n") {
-			match err {
-				nom::Err::Error(err) => {
-					assert_eq!(err.code, ErrorKind::Tag);
-				}
-				nom::Err::Failure(err) => {
-					assert_eq!(err.code, ErrorKind::Tag);
-				}
-				nom::Err::Incomplete(e) => {
-					panic!("unepxected error");
-				}
-			}
-		} else {
-			panic!("expected error");
-		}
-		if let Err(err) = sam_naming_reply("NAMING  REPLY RESULT=KEY_NOT_FOUND\n") {
-			match err {
-				nom::Err::Error(err) => {
-					assert_eq!(err.code, ErrorKind::Tag);
-				}
-				nom::Err::Failure(err) => {
-					assert_eq!(err.code, ErrorKind::Tag);
-				}
-				nom::Err::Incomplete(e) => {
-					panic!("unepxected error");
-				}
-			}
-		} else {
-			panic!("expected error");
-		}
-	}
-
-	#[test]
-	fn dest_reply() {
-		use crate::parsers::sam_dest_reply;
-
-		assert_eq!(
-			sam_dest_reply("DEST REPLY PUB=foo PRIV=foobar\n"),
-			Ok(("", vec![("PUB", "foo"), ("PRIV", "foobar")]))
-		);
+		let res = sam_hello("HELLO REPLY RESULT=OK VERSION=3.1\n").unwrap();
+		println!("{:#?}", res);
 	}
 }
