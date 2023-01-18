@@ -2,8 +2,7 @@
 //! I2CP client and router options taken from https://geti2p.net/en/docs/protocol/i2cp
 //! SAMv3 options taken from https://geti2p.net/en/docs/api/samv3#options
 
-
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 /// options used when interacting with the SAM bridge
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -222,7 +221,6 @@ pub enum MessageReliability {
 	BestEffort,
 	None,
 }
-
 
 /// returns the default settings for a connection to the
 /// SAM bridge. Intentionally the only configured values are
@@ -693,16 +691,17 @@ impl ToString for SignatureType {
 	}
 }
 
-
 #[cfg(test)]
 mod test {
 	use crate::{sam::DEFAULT_API, SamConnection};
 
-use super::*;
+	use super::*;
 	#[test]
 	fn test_sigs() {
 		let mut sam_conn = SamConnection::connect(DEFAULT_API).unwrap();
-		let (pubkey, seckey) = sam_conn.generate_destination(SignatureType::RedDsaSha512Ed25519).unwrap();
+		let (pubkey, seckey) = sam_conn
+			.generate_destination(SignatureType::RedDsaSha512Ed25519)
+			.unwrap();
 		println!("New public key: {}", pubkey);
 		println!("New secret key: {}", seckey);
 	}
