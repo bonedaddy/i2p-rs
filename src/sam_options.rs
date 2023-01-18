@@ -700,7 +700,7 @@ mod test {
 		let (pubkey, seckey) = sam_conn
 			.generate_destination(SignatureType::RedDsaSha512Ed25519)
 			.unwrap();
-		println!("New public key: {}", pubkey);
-		println!("New secret key: {}", seckey);
+		println!("New public key: {pubkey}");
+		println!("New secret key: {seckey}");
 	}
 }

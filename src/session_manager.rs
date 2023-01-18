@@ -97,7 +97,7 @@ mod test {
 		let sam_sess = Session::create(
 			DEFAULT_API,
 			"TRANSIENT",
-			&"mainsess",
+			"mainsess",
 			SessionStyle::Primary,
 			SAMOptions::default(),
 		)

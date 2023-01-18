@@ -276,7 +276,7 @@ mod tests {
 		);
 		assert_eq!(
 			Ok(vec![a.clone()]),
-			tsa(&format!("{}:{}", "example.i2p", "24352"))
+			tsa(format!("{}:{}", "example.i2p", "24352"))
 		);
 		assert_eq!(
 			Ok(vec![a.clone()]),
@@ -291,7 +291,7 @@ mod tests {
 	#[test]
 	fn set_dest() {
 		fn i2p(low: u8) -> I2pAddr {
-			I2pAddr::new(&format!("example{}.i2p", low))
+			I2pAddr::new(&format!("example{low}.i2p"))
 		}
 
 		let mut addr = I2pSocketAddr::new(i2p(12), 80);
