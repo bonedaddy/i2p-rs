@@ -61,9 +61,9 @@ impl SamSessionWatcher {
 			Err(err) => {
 				error!("accept encountered error, recreating stream: {:#?}", err);
 				{
-					drop(&mut self.listener);
+					//drop(&mut self.listener);
 					self.session.sam.conn.shutdown(Shutdown::Both)?;
-					drop(&mut self.session);
+					//drop(&mut self.session);
 				}
 				self.recreate()?;
 				Err(I2PError::SessionRecreated.into())

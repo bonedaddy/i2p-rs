@@ -75,10 +75,9 @@ impl SessionStyle {
 }
 
 fn verify_response<'a>(vec: &'a [(&str, &str)]) -> Result<HashMap<&'a str, &'a str>> {
-	let new_vec = vec.clone();
-	let map: HashMap<&str, &str> = new_vec.iter().map(|&(k, v)| (k, v)).collect();
-	let res = map.get("RESULT").unwrap_or(&"OK").clone();
-	let msg = map.get("MESSAGE").unwrap_or(&"").clone();
+	let map: HashMap<&str, &str> = vec.iter().map(|&(k, v)| (k, v)).collect();
+	let res = <&str>::clone(map.get("RESULT").unwrap_or(&"OK"));
+	let msg = <&str>::clone(map.get("MESSAGE").unwrap_or(&""));
 	match res {
 		"OK" => Ok(map),
 		"CANT_REACH_PEER" => Err(I2PError::SAMCantReachPeer(msg.to_string()).into()),
@@ -236,13 +235,11 @@ impl Session {
 	}
 
 	pub fn duplicate(&self) -> Result<Session> {
-		self.sam
-			.duplicate()
-			.map(|s| Session {
-				sam: s,
-				local_dest: self.local_dest.clone(),
-				nickname: self.nickname.clone(),
-			})
+		self.sam.duplicate().map(|s| Session {
+			sam: s,
+			local_dest: self.local_dest.clone(),
+			nickname: self.nickname.clone(),
+		})
 	}
 	/// attempts to return a handle to the underlying socket
 	pub fn try_clone(&self) -> std::io::Result<TcpStream> {

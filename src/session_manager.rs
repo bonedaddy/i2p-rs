@@ -26,7 +26,7 @@ pub struct SubSession {
 impl SessionManager {
 	pub fn new(session: Session) -> SessionManager {
 		SessionManager {
-			primary_session: session, 
+			primary_session: session,
 			subsessions: dashmap::DashMap::new(),
 		}
 	}
