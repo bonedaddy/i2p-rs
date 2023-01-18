@@ -1,13 +1,11 @@
 use rand::{distributions::Alphanumeric, Rng};
 use std::str::FromStr;
-use std::sync::Arc;
 
 use super::sam::Session;
-use crate::sam::DEFAULT_API;
+
 use crate::{
-	net::{I2pListener, I2pSocketAddr, I2pStream},
 	parsers::{sam_session_status, sam_stream_status},
-	sam::{SessionStyle, StreamConnect},
+	sam::SessionStyle,
 	sam_options::SAMOptions,
 	I2PError, SamConnection,
 };
@@ -56,7 +54,7 @@ impl SessionManager {
 		let _ = self.subsessions.insert(
 			session_key.to_string(),
 			SubSession {
-				nickname: nickname.to_string(),
+				nickname: nickname,
 				listen_port: u16::from_str(listen_port).unwrap(),
 			},
 		);
@@ -85,7 +83,7 @@ impl SessionManager {
 			.sample_iter(&Alphanumeric)
 			.take(16)
 			.collect();
-		format!("sessid-{}", suffix)
+		format!("sessid-{suffix}")
 	}
 }
 

@@ -28,10 +28,7 @@ impl I2pSocketAddr {
 	/// assert_eq!(socket.port(), 8080);
 	/// ```
 	pub fn new(dest: I2pAddr, port: u16) -> I2pSocketAddr {
-		I2pSocketAddr {
-			port: port,
-			dest: dest,
-		}
+		I2pSocketAddr { port, dest }
 	}
 
 	/// Returns the I2P address associated with this socket address.
@@ -235,7 +232,7 @@ impl<'a, T: ToI2pSocketAddrs + ?Sized> ToI2pSocketAddrs for &'a T {
 impl ToI2pSocketAddrs for String {
 	type Iter = vec::IntoIter<I2pSocketAddr>;
 	fn to_socket_addrs(&self) -> io::Result<vec::IntoIter<I2pSocketAddr>> {
-		(&**self).to_socket_addrs()
+		(**self).to_socket_addrs()
 	}
 }
 

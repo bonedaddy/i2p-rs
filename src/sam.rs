@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::Result;
 use std::clone::Clone;
 use std::collections::HashMap;
 use std::io::prelude::*;
@@ -18,10 +18,10 @@ use crate::parsers::{
 };
 use crate::sam_options::{SAMOptions, SignatureType};
 
-pub static DEFAULT_API: &'static str = "127.0.0.1:7656";
+pub static DEFAULT_API: &str = "127.0.0.1:7656";
 
-static SAM_MIN: &'static str = "3.0";
-static SAM_MAX: &'static str = "3.3";
+static SAM_MIN: &str = "3.0";
+static SAM_MAX: &str = "3.3";
 
 #[derive(Clone, Debug)]
 pub enum SessionStyle {
@@ -118,11 +118,7 @@ impl SamConnection {
 	}
 
 	fn handshake(&mut self) -> Result<HashMap<String, String>> {
-		let hello_msg = format!(
-			"HELLO VERSION MIN={min} MAX={max} \n",
-			min = SAM_MIN,
-			max = SAM_MAX
-		);
+		let hello_msg = format!("HELLO VERSION MIN={SAM_MIN} MAX={SAM_MAX} \n");
 		self.send(hello_msg, sam_hello)
 	}
 
@@ -137,7 +133,7 @@ impl SamConnection {
 
 	// TODO: Implement a lookup table
 	pub fn naming_lookup(&mut self, name: &str) -> Result<String> {
-		let naming_lookup_msg = format!("NAMING LOOKUP NAME={name} \n", name = name);
+		let naming_lookup_msg = format!("NAMING LOOKUP NAME={name} \n");
 		let ret = self.send(naming_lookup_msg, sam_naming_reply)?;
 		Ok(ret["VALUE"].clone())
 	}
@@ -201,8 +197,8 @@ impl Session {
 		let local_dest = sam.naming_lookup("ME")?;
 
 		Ok(Session {
-			sam: sam,
-			local_dest: local_dest,
+			sam,
+			local_dest,
 			nickname: nickname.to_string(),
 		})
 	}
@@ -247,7 +243,7 @@ impl Session {
 				local_dest: self.local_dest.clone(),
 				nickname: self.nickname.clone(),
 			})
-			.map_err(|e| e.into())
+			.map_err(|e| e)
 	}
 	/// attempts to return a handle to the underlying socket
 	pub fn try_clone(&self) -> std::io::Result<TcpStream> {
@@ -279,15 +275,15 @@ impl StreamConnect {
 			destination = dest,
 		);
 		if port > 0 {
-			stream_msg.push_str(&format!(" TO_PORT={port}\n", port = port));
+			stream_msg.push_str(&format!(" TO_PORT={port}\n"));
 		} else {
-			stream_msg.push_str("\n");
+			stream_msg.push('\n');
 		}
 
 		sam.send(stream_msg, sam_stream_status)?;
 
 		Ok(StreamConnect {
-			sam: sam,
+			sam,
 			session: session.duplicate()?,
 			peer_dest: dest,
 			peer_port: port,
@@ -395,7 +391,7 @@ impl StreamForward {
 			let mut buf_read = io::BufReader::new(stream.duplicate()?);
 			let mut dest_line = String::new();
 			buf_read.read_line(&mut dest_line)?;
-			dest_line.split(" ").next().unwrap_or("").trim().to_string()
+			dest_line.split(' ').next().unwrap_or("").trim().to_string()
 		};
 		if destination.is_empty() {
 			return Err(
@@ -425,7 +421,7 @@ pub fn nickname() -> String {
 		.sample_iter(&Alphanumeric)
 		.take(8)
 		.collect();
-	format!("i2prs-{}", suffix)
+	format!("i2prs-{suffix}")
 }
 
 /*

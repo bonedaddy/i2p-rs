@@ -15,7 +15,7 @@ use crate::{
 	sam_options::SAMOptions,
 	I2PError, Session,
 };
-use log::{error, info, warn};
+use log::error;
 
 /// SamSessionWatcher provides the ability to gracefully handle
 /// runtime errors by restarting the sam session, and recreating the listener
@@ -89,13 +89,7 @@ impl SamSessionWatcher {
 		session_style: SessionStyle,
 		opts: SAMOptions,
 	) -> Result<(Session, I2pListener)> {
-		let session = Session::create(
-			sam_endpoint,
-			destination,
-			nickname,
-			session_style,
-			opts.clone(),
-		)?;
+		let session = Session::create(sam_endpoint, destination, nickname, session_style, opts)?;
 		let listener = I2pListener::bind_with_session(&session)?;
 		Ok((session, listener))
 	}
