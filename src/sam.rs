@@ -243,7 +243,6 @@ impl Session {
 				local_dest: self.local_dest.clone(),
 				nickname: self.nickname.clone(),
 			})
-			.map_err(|e| e)
 	}
 	/// attempts to return a handle to the underlying socket
 	pub fn try_clone(&self) -> std::io::Result<TcpStream> {

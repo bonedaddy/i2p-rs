@@ -26,7 +26,7 @@ pub struct SubSession {
 impl SessionManager {
 	pub fn new(session: Session) -> SessionManager {
 		SessionManager {
-			primary_session: session,
+			primary_session: session, 
 			subsessions: dashmap::DashMap::new(),
 		}
 	}
@@ -54,7 +54,7 @@ impl SessionManager {
 		let _ = self.subsessions.insert(
 			session_key.to_string(),
 			SubSession {
-				nickname: nickname,
+				nickname,
 				listen_port: u16::from_str(listen_port).unwrap(),
 			},
 		);
@@ -90,6 +90,8 @@ impl SessionManager {
 #[cfg(test)]
 mod test {
 	use super::*;
+	use crate::sam::DEFAULT_API;
+
 	#[test]
 	fn test_session_manager() {
 		let sam_sess = Session::create(
