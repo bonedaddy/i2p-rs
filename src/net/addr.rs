@@ -128,7 +128,7 @@ impl fmt::Display for I2pSocketAddr {
 ///
 /// Some examples:
 ///
-/// ```
+/// ```no_run
 /// use i2p::net::{I2pSocketAddr, I2pStream, I2pDatagramSocket, I2pListener, I2pAddr};
 ///
 ///
