@@ -1,4 +1,3 @@
-use rand::{distributions::Alphanumeric, Rng};
 use std::str::FromStr;
 
 use super::sam::Session;
@@ -79,11 +78,7 @@ impl SessionManager {
 		})
 	}
 	fn rand_session_id(&self) -> String {
-		let suffix: String = rand::thread_rng()
-			.sample_iter(&Alphanumeric)
-			.take(16)
-			.collect();
-		format!("sessid-{suffix}")
+		format!("sessid-{}", crate::utils::rand_string(16))
 	}
 }
 
