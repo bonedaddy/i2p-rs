@@ -29,6 +29,7 @@ use std::net::{SocketAddr, ToSocketAddrs};
 ///        socket.send_to(buf, &src)?;
 ///    }
 ///    // the socket is closed here
+///    Ok(()) 
 /// }
 /// ```
 pub struct I2pDatagramSocket {}
