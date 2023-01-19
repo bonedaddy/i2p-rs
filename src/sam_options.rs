@@ -2,6 +2,8 @@
 //! I2CP client and router options taken from https://geti2p.net/en/docs/protocol/i2cp
 //! SAMv3 options taken from https://geti2p.net/en/docs/api/samv3#options
 
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 
 /// options used when interacting with the SAM bridge
@@ -201,18 +203,28 @@ pub enum LeaseSetAuthType {
 	PSKPerClient = 2_u64,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[repr(u16)]
 pub enum SignatureType {
-	DsaSha1,
-	EcdsaSha256P256,
-	EcdsaSha384P384,
-	EcdsaSha512P21,
-	RsaSha256_2048,
-	RsaSha384_3072,
-	RsaSha512_4096,
-	EdDsaSha512Ed25519,
-	EdDsaSha512Ed25519ph,
-	RedDsaSha512Ed25519,
+	/// Legacy Router Identities and Destinations, never explicitly set
+	DsaSha1 = 0,
+	EcdsaSha256P256 = 1,
+	/// older destinations
+	EcdsaSha384P384 = 2,
+	/// rarely if ever used for destination
+	EcdsaSha512P521 = 3,
+	/// offline only, never used in key  certificates for router identities or destinations
+	RsaSha256_2048 = 4,
+	/// offline only, never used in key  certificates for router identities or destinations
+	RsaSha384_3072 = 5,
+	/// offline only, never used in key  certificates for router identities or destinations
+	RsaSha512_4096 = 6,
+	/// recent router identities and destinations
+	EdDsaSha512Ed25519 = 7,
+	/// offline only, never used in key  certificates for router identities or destinations
+	EdDsaSha512Ed25519ph = 8,
+	/// for destinations and encrypted leasesets only, never for router identities
+	RedDsaSha512Ed25519 = 11,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -678,7 +690,7 @@ impl ToString for SignatureType {
 			Self::DsaSha1 => "DSA_SHA1".to_string(),
 			Self::EcdsaSha256P256 => "ECDSA_SHA256_P256".to_string(),
 			Self::EcdsaSha384P384 => "ECDSA_SHA384_P384".to_string(),
-			Self::EcdsaSha512P21 => "ECDSA_SHA512_P521".to_string(),
+			Self::EcdsaSha512P521 => "ECDSA_SHA512_P521".to_string(),
 			Self::RsaSha256_2048 => "RSA_SHA256_2048".to_string(),
 			Self::RsaSha384_3072 => "RSA_SHA384_3072".to_string(),
 			Self::RsaSha512_4096 => "RSA_SHA512_4096".to_string(),
@@ -689,6 +701,60 @@ impl ToString for SignatureType {
 	}
 }
 
+impl FromStr for SignatureType {
+	type Err = String;
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+			if s.eq_ignore_ascii_case("DSA_SHA1") {
+				Ok(Self::DsaSha1)
+			} else if s.eq_ignore_ascii_case("ECDSA_SHA256_P256") {
+				Ok(Self::EcdsaSha256P256)
+			} else if s.eq_ignore_ascii_case("ECDSA_SHA384_P384") {
+				Ok(Self::EcdsaSha384P384)
+			} else if s.eq_ignore_ascii_case("ECDSA_SHA512_P521") {
+				Ok(Self::EcdsaSha512P521)
+			} else if s.eq_ignore_ascii_case("RSA_SHA256_2048") {
+				Ok(Self::RsaSha256_2048)
+			} else if s.eq_ignore_ascii_case("RSA_SHA384_3072") {
+				Ok(Self::RsaSha384_3072)
+			} else if s.eq_ignore_ascii_case("RSA_SHA512_4096") {
+				Ok(Self::RsaSha512_4096)
+			} else if s.eq_ignore_ascii_case("EdDSA_SHA512_Ed25519") {
+				Ok(Self::EdDsaSha512Ed25519)
+			} else if s.eq_ignore_ascii_case("EdDSA_SHA512_Ed25519ph") {
+				Ok(Self::EdDsaSha512Ed25519ph)
+			} else if s.eq_ignore_ascii_case("RedDSA_SHA512_Ed25519") {
+				Ok(Self::RedDsaSha512Ed25519)
+			} else  {
+				Err(String::from("invalid signature type"))
+			}
+	}
+}
+
+
+impl Default for SignatureType {
+	fn default() -> Self {
+		Self::EdDsaSha512Ed25519
+	}
+}
+
+impl TryFrom<u16> for SignatureType {
+	type Error = String;
+	fn try_from(value: u16) -> Result<Self, Self::Error> {
+		match value {
+			0 => Ok(Self::DsaSha1),
+			1 => Ok(Self::EcdsaSha256P256),
+			2 => Ok(Self::EcdsaSha384P384),
+			3 => Ok(Self::EcdsaSha512P521),
+			4 => Ok(Self::RsaSha256_2048),
+			5 => Ok(Self::RsaSha384_3072),
+			6 => Ok(Self::RsaSha512_4096),
+			7 => Ok(Self::EdDsaSha512Ed25519),
+			8 => Ok(Self::EdDsaSha512Ed25519ph),
+			11 => Ok(Self::RedDsaSha512Ed25519),
+			_ => Err(String::from("invalid signature type"))
+		}
+	}
+}
 #[cfg(test)]
 mod test {
 	use crate::{sam::DEFAULT_API, SamConnection};
@@ -702,5 +768,32 @@ mod test {
 			.unwrap();
 		println!("New public key: {pubkey}");
 		println!("New secret key: {seckey}");
+	}
+
+	#[test]
+	fn test_signature_types() {
+		assert_eq!(SignatureType::default(), SignatureType::EdDsaSha512Ed25519);
+		assert_eq!(SignatureType::try_from(0).unwrap(), SignatureType::DsaSha1);
+		assert_eq!(SignatureType::try_from(1).unwrap(), SignatureType::EcdsaSha256P256);
+		assert_eq!(SignatureType::try_from(2).unwrap(), SignatureType::EcdsaSha384P384);
+		assert_eq!(SignatureType::try_from(3).unwrap(), SignatureType::EcdsaSha512P521);
+		assert_eq!(SignatureType::try_from(4).unwrap(), SignatureType::RsaSha256_2048);
+		assert_eq!(SignatureType::try_from(5).unwrap(), SignatureType::RsaSha384_3072);
+		assert_eq!(SignatureType::try_from(6).unwrap(), SignatureType::RsaSha512_4096);
+		assert_eq!(SignatureType::try_from(7).unwrap(), SignatureType::EdDsaSha512Ed25519);
+		assert_eq!(SignatureType::try_from(8).unwrap(), SignatureType::EdDsaSha512Ed25519ph);
+		assert_eq!(SignatureType::try_from(11).unwrap(), SignatureType::RedDsaSha512Ed25519);
+
+		assert_eq!(SignatureType::from_str("dsa_sha1").unwrap(), SignatureType::DsaSha1);
+		assert_eq!(SignatureType::from_str("Ecdsa_Sha256_P256").unwrap(), SignatureType::EcdsaSha256P256);
+		assert_eq!(SignatureType::from_str("Ecdsa_Sha384_P384").unwrap(), SignatureType::EcdsaSha384P384);
+		assert_eq!(SignatureType::from_str("Ecdsa_Sha512_P521").unwrap(), SignatureType::EcdsaSha512P521);
+		assert_eq!(SignatureType::from_str("Rsa_Sha256_2048").unwrap(), SignatureType::RsaSha256_2048);
+		assert_eq!(SignatureType::from_str("Rsa_Sha384_3072").unwrap(), SignatureType::RsaSha384_3072);
+		assert_eq!(SignatureType::from_str("Rsa_Sha512_4096").unwrap(), SignatureType::RsaSha512_4096);
+		assert_eq!(SignatureType::from_str("EdDsa_Sha512_Ed25519").unwrap(), SignatureType::EdDsaSha512Ed25519);
+		assert_eq!(SignatureType::from_str("EdDsa_Sha512_Ed25519ph").unwrap(), SignatureType::EdDsaSha512Ed25519ph);
+		assert_eq!(SignatureType::from_str("RedDsa_Sha512_Ed25519").unwrap(), SignatureType::RedDsaSha512Ed25519);
+		assert!(SignatureType::from_str("foobar").is_err());
 	}
 }
