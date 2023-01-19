@@ -19,13 +19,14 @@ use crate::sam_options::{SAMOptions, SignatureType};
 pub static DEFAULT_API: &str = "127.0.0.1:7656";
 
 static SAM_MIN: &str = "3.0";
-static SAM_MAX: &str = "3.2";
+static SAM_MAX: &str = "3.3";
 
 #[derive(Clone, Debug)]
 pub enum SessionStyle {
 	Datagram,
 	Raw,
 	Stream,
+	Primary,
 }
 
 #[derive(Debug)]
@@ -60,12 +61,14 @@ pub struct StreamConnect {
 	pub local_port: u16,
 }
 
-impl SessionStyle {
-	fn string(&self) -> &str {
-		match *self {
-			SessionStyle::Datagram => "DATAGRAM",
-			SessionStyle::Raw => "RAW",
-			SessionStyle::Stream => "STREAM",
+
+impl ToString for SessionStyle {
+	fn to_string(&self) -> String {
+		match self {
+			SessionStyle::Datagram => "DATAGRAM".to_string(),
+			SessionStyle::Raw => "RAW".to_string(),
+			SessionStyle::Stream => "STREAM".to_string(),
+			SessionStyle::Primary => "PRIMARY".to_string()
 		}
 	}
 }
@@ -181,7 +184,7 @@ impl Session {
 			// https://github.com/eyedeekay/goSam/blob/62cade9ebc26e48ff32a517ef94212fc90aa92cd/client.go#L169
 			// https://github.com/eyedeekay/goSam/blob/62cade9ebc26e48ff32a517ef94212fc90aa92cd/client.go#L166
 			"SESSION CREATE STYLE={style} ID={nickname} DESTINATION={destination} {options}\n",
-			style = style.string(),
+			style = style.to_string(),
 			nickname = nickname,
 			destination = destination,
 			options = options.options(),
@@ -339,6 +342,9 @@ impl Write for StreamConnect {
 }
 
 pub struct StreamForward {
+	#[cfg(feature = "public-conn")]
+	pub session: Session,
+	#[cfg(not(feature = "public-conn"))]
 	session: Session,
 }
 
