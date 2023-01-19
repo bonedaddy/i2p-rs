@@ -324,6 +324,10 @@ impl StreamConnect {
 	pub fn try_clone_sam(&self) -> std::io::Result<TcpStream> {
 		self.sam.try_clone()
 	}
+	pub fn to_tokio_stream(&self) -> Result<tokio::net::TcpStream> {
+		self.set_nonblocking(true)?;
+		Ok(tokio::net::TcpStream::from_std(self.sam.conn.try_clone()?)?)
+	}
 }
 
 impl Read for StreamConnect {

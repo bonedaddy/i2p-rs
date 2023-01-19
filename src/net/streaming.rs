@@ -201,6 +201,9 @@ impl I2pStream {
 	pub fn try_clone(&self) -> Result<I2pStream> {
 		self.inner.duplicate().map(|s| I2pStream { inner: s })
 	}
+	pub fn to_tokio_stream(&mut self) -> Result<tokio::net::TcpStream> {
+		self.inner.to_tokio_stream()
+	}
 }
 
 impl Read for I2pStream {
