@@ -12,7 +12,7 @@ license = "MIT"
 edition = "2021"
 
 [features]
-default = ["public-conn"]
+default = ["public-conn", "tokio"]
 public-conn = []
 [badges]
 travis-ci = { repository = "i2p/i2p-rs" }
@@ -36,5 +36,9 @@ version = "6"
 version = "0.8"
 [dependencies.sha2]
 version = "0.10"
+[dependencies.tokio]
+version = "1"
+features = ["full", "parking_lot"]
+optional = true
 [dev-dependencies]
 env_logger = "0.5"
