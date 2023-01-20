@@ -4,6 +4,8 @@
 
 use std::str::FromStr;
 
+use data_encoding::BASE64;
+use rand::thread_rng;
 use serde::{Deserialize, Serialize};
 
 /// options used when interacting with the SAM bridge
@@ -65,6 +67,33 @@ pub struct I2CPRouterOptions {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct LeaseSetClientDH {
+	// needed to specify multiple keys
+	pub nnn: i64,
+	pub nickname: String,
+	pub public_key: String,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct LeaseSetClientPSK {
+	// needed to specify multiple keys
+	pub nnn: i64,
+	pub nickname: String,
+	/// must be base64 encoded and in the format of `nickname:psk`
+	pub psk: String,
+}
+
+
+/// diferent methods for performing per-client authorization 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum LeaseSetClientEncryption {
+	/// uses a diffie-hellman exchange
+	DH(LeaseSetClientDH),
+	/// uses a pre-shared key
+	PSK(LeaseSetClientPSK),
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct I2CPClientOptions {
 	/// (ms) Idle time required (default 30 minutes)
 	pub close_idle_time: Option<u64>,
@@ -90,6 +119,7 @@ pub struct I2CPClientOptions {
 	pub lease_set_secret: Option<LeaseSetSecret>,
 	/// The type of leaseset to be sent in the CreateLeaseSet2 Message. Interpreted client-side, but also passed to the router in the SessionConfig, to declare intent and check support. See proposal 123.
 	pub lease_set_signing_private_key: Option<LeaseSetSigningPrivateKey>,
+	pub leaset_set_client_encryption: Option<Vec<LeaseSetClientEncryption>>,
 	/// Guaranteed is disabled; None implemented in 0.8.1; None is the default as of 0.9.4
 	pub message_reliability: Option<MessageReliability>,
 	/// (ms) Idle time required (default 20 minutes, minimum 5 minutes)
@@ -166,17 +196,17 @@ pub struct LeaseSetEncType(String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// A base 64 X25519 private key for the router to use to decrypt the encrypted LS2 locally, only if per-client authentication is enabled. Optionally preceded by the key type and ':'. Only "ECIES_X25519:" is supported, which is the default. See proposal 123. Do not confuse with i2cp.leaseSetPrivateKey which is for the leaseset encryption keys.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types
-pub struct LeaseSetPrivKey(String);
+pub struct LeaseSetPrivKey(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// Base 64 private keys for encryption. Optionally preceded by the encryption type name or number and ':'. For LS1, only one key is supported, and only "0:" or "ELGAMAL_2048:" is supported, which is the default. As of 0.9.39, for LS2, multiple keys may be comma-separated, and each key must be a different encryption type. I2CP will generate the public key from the private key. Use for persistent leaseset keys across restarts. See proposals 123, 144, and 145. See also i2cp.leaseSetEncType. Do not confuse with i2cp.leaseSetPrivKey which is for encrypted LS2.
-pub struct LeaseSetPrivateKey(String);
+pub struct LeaseSetPrivateKey(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// For encrypted leasesets. Base 64 SessionKey (44 characters)
 pub struct LeaseSetKey(String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// Base 64 encoded UTF-8 secret used to blind the leaseset address. See proposal 123.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types
-pub struct LeaseSetSecret(String);
+pub struct LeaseSetSecret(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// The base 64 of the transient private key, prefixed by an optional sig type number or name, default DSA_SHA1. See proposal 123.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types
@@ -189,7 +219,7 @@ pub struct LeaseSetSigningPrivateKey(String);
 pub type LeaseSetOfflineExpiration = [u8; 4];
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// The type of leaseset to be sent in the CreateLeaseSet2 Message. Interpreted client-side, but also passed to the router in the SessionConfig, to declare intent and check support. See proposal 123.
-pub struct LeaseSetType(u8);
+pub struct LeaseSetType(pub u8);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// The sig type of the blinded key for encrypted LS2. Default depends on the destination sig type. See proposal 123.
 pub struct LeaseSetBlindedType(u16);
@@ -461,6 +491,12 @@ impl I2CPClientOptions {
 		}
 		if let Some(tcp_port) = &self.tcp_port {
 			options.push_str(&format!("i2cp.tcp.port={tcp_port} "));
+		}
+		if let Some(lease_set_enc) = &self.leaset_set_client_encryption {
+			for set_enc in lease_set_enc {
+				options.push_str(&set_enc.to_options())
+
+			}
 		}
 		options
 	}
@@ -755,6 +791,28 @@ impl TryFrom<u16> for SignatureType {
 		}
 	}
 }
+
+impl Default for LeaseSetClientEncryption {
+	fn default() -> Self {
+		let nick = crate::utils::rand_string(16);
+		let psk = crate::utils::rand_string(32);
+		let psk = BASE64.encode(psk.as_bytes());
+		Self::PSK(LeaseSetClientPSK { nnn: 0, nickname: nick, psk})
+	}
+}
+
+impl LeaseSetClientEncryption {
+	fn to_options(&self) -> String {
+		match self {
+			Self::DH(_) => unimplemented!(),
+			Self::PSK(psk) => {
+				let encoded_psk = BASE64.encode(psk.psk.as_bytes());
+				format!("i2cp.leaseSetClient.psk.{}={}:{} ", psk.nnn, psk.nickname, encoded_psk)
+			}
+		}
+	}
+}
+
 #[cfg(test)]
 mod test {
 	use crate::{sam::DEFAULT_API, SamConnection};
