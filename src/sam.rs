@@ -404,16 +404,15 @@ impl StreamForward {
 		Ok((stream, addr))
 	}
 
-	pub fn forward(&self, host: &str, port: &str) -> Result<(StreamConnect, I2pSocketAddr)> {
-		let mut sam_conn = SamConnection::connect(self.session.sam_api()?).unwrap();
+	pub fn forward(&mut self, host: &str, port: &str) -> Result<(StreamConnect, I2pSocketAddr)> {
 		let forward_stream_msg = format!(
 			"STREAM FORWARD ID={nickname} PORT={port} HOST={host}",
 			nickname = self.session.nickname
 		);
-		let resp = sam_conn.send(forward_stream_msg, sam_stream_status)?;
+		let resp = self.session.sam.send(forward_stream_msg, sam_stream_status)?;
 		log::info!("resp {:#?}", resp);
 		let mut stream = StreamConnect {
-			sam: sam_conn,
+			sam: self.session.sam.duplicate()?,
 			session: self.session.duplicate()?,
 			peer_dest: "".to_string(),
 			peer_port: 0,

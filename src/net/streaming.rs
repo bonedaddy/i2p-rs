@@ -360,7 +360,7 @@ impl I2pListener {
 		let (i2p_stream, addr) = self.forward.accept()?;
 		Ok((I2pStream { inner: i2p_stream }, addr))
 	}
-	pub fn forward(&self, host: &str, port: &str) -> Result<(I2pStream, I2pSocketAddr)> {
+	pub fn forward(&mut self, host: &str, port: &str) -> Result<(I2pStream, I2pSocketAddr)> {
 		let (i2p_stream, addr) = self.forward.forward(host, port)?;
 		Ok((I2pStream { inner: i2p_stream }, addr))
 	}
