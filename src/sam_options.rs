@@ -191,8 +191,8 @@ pub struct I2CPTunnelOutboundOptions {
 pub struct LeaseSetOfflineSignature(String);
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// The encryption type to be used, as of 0.9.38. Interpreted client-side, but also passed to the router in the SessionConfig, to declare intent and check support. As of 0.9.39, may be comma-separated values for multiple types. See PublicKey in common strutures spec for values. See proposals 123, 144, and 145.
-/// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types
-pub struct LeaseSetEncType(String);
+///https://geti2p.net/spec/proposals/144-ecies-x25519-aead-ratchet
+pub struct LeaseSetEncType(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// A base 64 X25519 private key for the router to use to decrypt the encrypted LS2 locally, only if per-client authentication is enabled. Optionally preceded by the key type and ':'. Only "ECIES_X25519:" is supported, which is the default. See proposal 123. Do not confuse with i2cp.leaseSetPrivateKey which is for the leaseset encryption keys.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types
@@ -202,7 +202,7 @@ pub struct LeaseSetPrivKey(pub String);
 pub struct LeaseSetPrivateKey(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// For encrypted leasesets. Base 64 SessionKey (44 characters)
-pub struct LeaseSetKey(String);
+pub struct LeaseSetKey(pub String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// Base 64 encoded UTF-8 secret used to blind the leaseset address. See proposal 123.
 /// https://doc.rust-lang.org/book/ch19-03-advanced-traits.html#using-the-newtype-pattern-to-implement-external-traits-on-external-types
