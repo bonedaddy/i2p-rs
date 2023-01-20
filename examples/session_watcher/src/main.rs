@@ -52,6 +52,7 @@ async fn main() {
 					lease_set_priv_key: Some(LeaseSetPrivKey("kIU9FG3U-2wIrGi5S7UsRlPKKumu5JNcZafG6Rh92Gs=".to_string())),
 					..Default::default()
 				}), 
+				// https://geti2p.net/spec/proposals/123-new-netdb-entries#encryption-spec-changes-required
 				client_options: Some(I2CPClientOptions {
 					lease_set_auth_type: Some(LeaseSetAuthType::PSKPerClient),
 					lease_set_private_key: Some(LeaseSetPrivateKey("ECIES_X25519:GBz0ZmkCURj6MObqHywYNUD5Mmb24b9~AucYxnqDLmE=".to_string())),
@@ -61,7 +62,7 @@ async fn main() {
 						LeaseSetClientEncryption::PSK(LeaseSetClientPSK {
 							nickname: BASE64_I2P.encode("foobarbaz".as_bytes()),
 							nnn: 0,
-							psk: i2p::utils::rand_string(32),
+							psk: "kIU9FG3U-2wIrGi5S7UsRlPKKumu5JNcZafG6Rh92Gs=".to_string(),
 						})
 					]),
 					..Default::default()
