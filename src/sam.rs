@@ -404,6 +404,48 @@ impl StreamForward {
 		Ok((stream, addr))
 	}
 
+	pub fn forward(&self, host: &str, port: &str) -> Result<(StreamConnect, I2pSocketAddr)> {
+		let mut sam_conn = SamConnection::connect(self.session.sam_api()?).unwrap();
+		let forward_stream_msg = format!(
+			"STREAM FORWARD ID={nickname} PORT={port} HOST={host}",
+			nickname = self.session.nickname
+		);
+		let resp = sam_conn.send(forward_stream_msg, sam_stream_status)?;
+		log::info!("resp {:#?}", resp);
+		let mut stream = StreamConnect {
+			sam: sam_conn,
+			session: self.session.duplicate()?,
+			peer_dest: "".to_string(),
+			peer_port: 0,
+			local_port: 0,
+		};
+
+		// TODO use a parser combinator, perhaps move down to sam.rs
+		let destination: String = {
+			let mut buf_read = io::BufReader::new(stream.duplicate()?);
+			let mut dest_line = String::new();
+			let mut from_port_line = String::new();
+			let mut to_port_line = String::new();
+			buf_read.read_line(&mut dest_line)?;
+			buf_read.read_line(&mut from_port_line)?;
+			buf_read.read_line(&mut to_port_line)?;
+			let dest_line = dest_line.split(' ').next().unwrap_or("").trim().to_string();
+			log::info!("dest_line({dest_line}) from_port_line({from_port_line}) to_port_line({to_port_line})");
+			dest_line
+		};
+		if destination.is_empty() {
+			return Err(
+				I2PError::SAMKeyNotFound("No b64 destination in accept".to_string()).into(),
+			);
+		}
+
+		let addr = I2pSocketAddr::new(I2pAddr::from_b64(&destination)?, 0);
+		stream.peer_dest = destination;
+
+		Ok((stream, addr))
+
+	}
+
 	pub fn local_addr(&self) -> Result<(String, u16)> {
 		Ok((self.session.local_dest.clone(), 0))
 	}
