@@ -192,11 +192,12 @@ impl Session {
 
 		sam.send(create_session_msg, sam_session_status)?;
 
-		let local_dest = sam.naming_lookup("ME")?;
+		//let local_dest = sam.naming_lookup("ME")?;
 
 		Ok(Session {
 			sam,
-			local_dest,
+			//local_dest,
+			local_dest: "empty".to_string(),
 			nickname: nickname.to_string(),
 		})
 	}
