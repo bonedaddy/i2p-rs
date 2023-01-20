@@ -68,6 +68,19 @@ impl SamSessionWatcher {
 			}
 		}
 	}
+	pub fn forward(self: &mut Box<Self>, host: &str, port: &str) -> Result<(StreamConnect, I2pSocketAddr)> {
+		match self.listener.forward.forward(host, port) {
+			Ok(res) => Ok(res),
+			Err(err) => {
+				error!("accept encountered error, recreating stream: {:#?}", err);
+				{
+					self.session.sam.conn.shutdown(Shutdown::Both)?;
+				}
+				self.recreate()?;
+				Err(I2PError::SessionRecreated.into())
+			}
+		}
+	}
 	fn recreate(self: &mut Box<Self>) -> Result<()> {
 		let (session, listener) = SamSessionWatcher::__recreate(
 			&self.sam_endpoint,
