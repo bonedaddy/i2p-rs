@@ -4,9 +4,9 @@
 
 use std::str::FromStr;
 
-use data_encoding::BASE64;
-use rand::thread_rng;
 use serde::{Deserialize, Serialize};
+
+use crate::net::BASE64_I2P;
 
 /// options used when interacting with the SAM bridge
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -222,7 +222,7 @@ pub type LeaseSetOfflineExpiration = [u8; 4];
 pub struct LeaseSetType(pub u8);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// The sig type of the blinded key for encrypted LS2. Default depends on the destination sig type. See proposal 123.
-pub struct LeaseSetBlindedType(u16);
+pub struct LeaseSetBlindedType(pub u16);
 
 /// The type of authentication for encrypted LS2. 0 for no per-client authentication (the default); 1 for DH per-client authentication; 2 for PSK per-client authentication. See proposal 123.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -537,7 +537,7 @@ impl I2CPTunnelInboundOptions {
 			options.push_str(&format!("inbound.length={length} "));
 		}
 		if let Some(length_variance) = &self.length_variance {
-			options.push_str(&format!("inbound.lengthVariance{length_variance} "));
+			options.push_str(&format!("inbound.lengthVariance={length_variance} "));
 		}
 		if let Some(quantity) = &self.quantity {
 			options.push_str(&format!("inbound.quantity={quantity} "));
@@ -565,7 +565,7 @@ impl I2CPTunnelOutboundOptions {
 			options.push_str(&format!("outbound.length={length} "));
 		}
 		if let Some(length_variance) = &self.length_variance {
-			options.push_str(&format!("outbound.lengthVariance{length_variance} "));
+			options.push_str(&format!("outbound.lengthVariance={length_variance} "));
 		}
 		if let Some(priority) = &self.priority {
 			options.push_str(&format!("outbound.priority={priority} "));
@@ -796,7 +796,7 @@ impl Default for LeaseSetClientEncryption {
 	fn default() -> Self {
 		let nick = crate::utils::rand_string(16);
 		let psk = crate::utils::rand_string(32);
-		let psk = BASE64.encode(psk.as_bytes());
+		let psk = BASE64_I2P.encode(psk.as_bytes());
 		Self::PSK(LeaseSetClientPSK { nnn: 0, nickname: nick, psk})
 	}
 }
