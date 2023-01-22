@@ -79,7 +79,7 @@ pub struct LeaseSetClientPSK {
 	// needed to specify multiple keys
 	pub nnn: i64,
 	pub nickname: String,
-	/// must be base64 encoded and in the format of `nickname:psk`
+	/// must be base64 encoded private key
 	pub psk: String,
 }
 
@@ -213,7 +213,7 @@ pub struct LeaseSetSecret(pub String);
 pub struct LeaseSetTransientPublicKey(String);
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 /// Base 64 private key for signatures. Optionally preceded by the key type and ':'. DSA_SHA1 is the default. Key type must match the signature type in the destination. I2CP will generate the public key from the private key. Use for persistent leaseset keys across restarts.
-pub struct LeaseSetSigningPrivateKey(String);
+pub struct LeaseSetSigningPrivateKey(pub String);
 
 /// The expiration of the offline signature, 4 bytes, seconds since the epoch. See proposal 123.
 pub type LeaseSetOfflineExpiration = [u8; 4];
@@ -806,8 +806,7 @@ impl LeaseSetClientEncryption {
 		match self {
 			Self::DH(_) => unimplemented!(),
 			Self::PSK(psk) => {
-				let encoded_psk = BASE64.encode(psk.psk.as_bytes());
-				format!("i2cp.leaseSetClient.psk.{}={}:{} ", psk.nnn, psk.nickname, encoded_psk)
+				format!("i2cp.leaseSetClient.psk.{}={}:{} ", psk.nnn, psk.nickname, psk.psk)
 			}
 		}
 	}
